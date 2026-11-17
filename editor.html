@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Edit website</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="editor.css">
+  <script src="editor.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Edit website</h1>
+    <p><a href="./">← Back to website</a></p>
+    <p>Update your page here. Drafts stay in this browser; only people with access to your GitHub repository can publish changes.</p>
+  </header>
+  <p id="editor-status" role="status" aria-live="polite">Loading your page…</p>
+  <form id="editor-form">
+    <fieldset id="editor-fields" disabled>
+      <legend>About your site</legend>
+      <label for="site-title-input">Website title</label>
+      <input id="site-title-input" required maxlength="160">
+      <label for="name-input">Your name</label>
+      <input id="name-input" required maxlength="100" autocomplete="name">
+      <label for="bio-input">Bio</label>
+      <textarea id="bio-input" rows="4" required></textarea>
+
+      <h2>Handouts &amp; notes</h2>
+      <p class="help">Link a PDF, a document, or any page. For your own PDFs, upload them to a <code>handouts</code> folder in GitHub and use a link such as <code>handouts/algebra.pdf</code>.</p>
+      <div id="note-fields"></div>
+      <button id="add-note" type="button">+ Add a note</button>
+
+      <h2>Social links</h2>
+      <label for="aops-handle">AoPS username</label>
+      <input id="aops-handle" autocomplete="off">
+      <label for="aops-url">AoPS profile URL <span class="help">(optional)</span></label>
+      <input id="aops-url" type="url" placeholder="https://artofproblemsolving.com/community/user/…">
+      <label for="discord-handle">Discord username</label>
+      <input id="discord-handle" autocomplete="off">
+      <label for="discord-url">Discord profile or invite URL <span class="help">(optional)</span></label>
+      <input id="discord-url" type="url" placeholder="https://discord.com/users/…">
+      <p class="help">Without a profile URL, the AoPS and Discord buttons copy your username.</p>
+      <label for="gmail-input">Gmail address</label>
+      <input id="gmail-input" type="email" autocomplete="email">
+      <label for="youtube-url">YouTube channel URL</label>
+      <input id="youtube-url" type="url" placeholder="https://www.youtube.com/@yourchannel">
+      <label for="github-url">GitHub profile URL</label>
+      <input id="github-url" type="url" placeholder="https://github.com/yourname">
+
+      <div class="actions">
+        <button type="submit">Preview changes</button>
+        <button id="save-draft" type="button">Save draft</button>
+        <button id="download" type="button">Download index.html</button>
+        <button id="reset-draft" type="button">Discard draft</button>
+      </div>
+    </fieldset>
+  </form>
+  <section>
+    <h2>Publish your changes</h2>
+    <ol>
+      <li>Preview your page, then choose <strong>Download index.html</strong>.</li>
+      <li><a href="https://github.com/ammarashary14/website/upload/main" target="_blank" rel="noopener noreferrer">Open GitHub’s upload page</a> and sign in.</li>
+      <li>Upload the downloaded file as <code>index.html</code>, replacing the old one, and commit to <code>main</code>. Rename it first if your browser added a number to the filename. GitHub Pages will update once enabled.</li>
+    </ol>
+    <p class="help">This editor does not ask for a password or GitHub token. Saving a draft or downloading a file does not change the live website.</p>
+  </section>
+  <section id="preview-section" hidden>
+    <h2>Preview</h2>
+    <iframe id="preview" title="Preview of your updated website" sandbox></iframe>
+  </section>
+</body>
+</html>

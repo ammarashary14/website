@@ -1,0 +1,16 @@
+fieldset { border: 0; padding: 0; margin: 24px 0; min-width: 0; }
+legend { font-size: 1.35rem; font-weight: bold; color: #087f8c; }
+label { display: block; margin-top: 16px; margin-bottom: 4px; }
+input, textarea { box-sizing: border-box; width: 100%; border: 1px solid #a4afb1; border-radius: 3px; padding: 9px 10px; font: inherit; color: #263b45; background: #fff; }
+textarea { resize: vertical; }
+button { font: inherit; color: #15596a; background: #e7f7f5; border: 1px solid #7aa6a8; border-radius: 3px; padding: 7px 12px; cursor: pointer; }
+button:hover { background: #d3efeb; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #087f8c; outline-offset: 2px; }
+button:disabled { cursor: wait; opacity: .6; }
+.help { font-size: .9rem; color: #5b6b70; }
+.note-row { border-left: 3px solid #ffc857; padding: 0 0 8px 16px; margin: 20px 0; }
+.note-row button { margin-top: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+#editor-status { padding: 10px 12px; background: #fff0bf; overflow-wrap: anywhere; }
+#preview { width: 100%; height: 650px; box-sizing: border-box; border: 1px solid #e6dcc3; background: #fffdf5; }
+code { overflow-wrap: anywhere; }

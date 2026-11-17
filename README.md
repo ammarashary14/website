@@ -1,14 +1,24 @@
-# Personal website
+# Catégories pour le mathématicien ivre
 
 A small static website. No packages or build step are needed.
 
 ## Edit
 
-Edit `index.html` to change the name, introduction, and links. To add a handout,
-create a `handouts` folder, put your PDF there, and replace the empty-state
-paragraph with a list of links. A sample list is included in an HTML comment.
-Use relative paths such as `handouts/algebra.pdf` so links work on GitHub Pages.
-Edit `style.css` to adjust the appearance.
+Choose **Edit website** in the footer to open the editor. Change the title,
+name, bio, handout links, or social links, then preview the result. **Save draft**
+keeps a copy in that browser. **Download index.html** exports the updated page;
+upload it to the repository root with GitHub's upload page and commit to `main`
+to publish. If your browser renames the download, rename it to `index.html` first.
+The editor is public, but drafts do not change the live site. Only GitHub
+repository collaborators can publish. No password or token is stored by the editor.
+
+To host a PDF, create a `handouts` folder in the repository and upload it there.
+Use a relative link such as `handouts/algebra.pdf` in the editor. External
+document links also work. AoPS and Discord buttons copy your usernames until
+you add direct profile or invite URLs. Gmail and YouTube already link directly.
+
+You can also edit `index.html` manually. Keep its IDs and `data-social`
+attributes so the editor can read it. Edit `style.css` to adjust the appearance.
 
 ## Check locally
 
@@ -27,6 +37,7 @@ Once GitHub deploys it, the site will be at:
 
 https://ammarashary14.github.io/website/
 
-No custom domain is needed. For the shorter address
+The static homepage works without JavaScript; the editor and username-copy
+buttons use small local scripts. No custom domain is needed. For the shorter address
 `https://ammarashary14.github.io/`, the repository must instead be named
 `ammarashary14.github.io`.
