@@ -7,10 +7,29 @@ const notes = document.getElementById('note-fields');
 const input = id => document.getElementById(id);
 let source;
 let noteNumber = 0;
+const profiles = [
+  { key: 'github', label: 'GitHub', hostname: 'github.com' },
+  { key: 'math-stackexchange', field: 'mathstackexchange', label: 'Math Stack Exchange', hostname: 'math.stackexchange.com' },
+  { key: 'inaturalist', label: 'iNaturalist', hostname: 'inaturalist.org' }
+];
+
+function profileLink(doc, profile) {
+  const explicit = doc.querySelector(`#other-links a[data-profile="${profile.key}"]`);
+  if (explicit) return explicit;
+  return [...doc.querySelectorAll('#other-links a:not([data-profile])')].find(link => {
+    try {
+      const hostname = new URL(link.getAttribute('href')).hostname.replace(/^www\./, '');
+      return hostname === profile.hostname;
+    } catch { return false; }
+  });
+}
 
 function safeUrl(value, relative = false) {
   const url = value.trim();
   if (!url) return '';
+  if (/^(?:file:|[a-z]:|\/(?:Users|home|workspace)(?:\/|$)|~(?:[\\/]|$))/i.test(url)) {
+    throw new Error('That is a path on your computer. Upload the PDF to GitHub first, then use handouts/filename.pdf or a public https:// URL. Leave the link blank to show “PDF coming soon.”');
+  }
   if (/\s|\\/.test(url)) throw new Error('Links cannot contain spaces or backslashes. Use %20 for spaces in filenames.');
   if (/^https?:\/\//i.test(url)) {
     const parsed = new URL(url);
@@ -28,8 +47,8 @@ function readPage(doc) {
     name: doc.getElementById('owner-name').textContent,
     bio: doc.getElementById('bio').textContent,
     notes: [...doc.querySelectorAll('#handout-content li')].map(li => ({
-      title: li.querySelector('a').textContent,
-      url: li.querySelector('a').getAttribute('href'),
+      title: li.querySelector('a, [data-note-title]')?.textContent || '',
+      url: li.querySelector('a')?.getAttribute('href') || '',
       description: li.querySelector('[data-description]')?.textContent || ''
     })),
     aopsHandle: social('aops').dataset.handle || '',
@@ -38,7 +57,9 @@ function readPage(doc) {
     discordUrl: social('discord').getAttribute('href') || '',
     gmail: (social('gmail').getAttribute('href') || '').replace(/^mailto:/, ''),
     youtube: social('youtube').getAttribute('href') || '',
-    github: doc.querySelector('#other-links a')?.getAttribute('href') || ''
+    ...Object.fromEntries(profiles.map(profile => [
+      profile.field || profile.key, profileLink(doc, profile)?.getAttribute('href') || ''
+    ]))
   };
 }
 
@@ -46,7 +67,7 @@ function addNote(note = {}) {
   const row = document.createElement('div');
   row.className = 'note-row';
   const number = ++noteNumber;
-  for (const [key, label] of [['title', 'Note title'], ['url', 'Link'], ['description', 'Description (optional)']]) {
+  for (const [key, label] of [['title', 'Note title'], ['url', 'Link (optional)'], ['description', 'Description (optional)']]) {
     const id = `note-${number}-${key}`;
     const fieldLabel = document.createElement('label');
     fieldLabel.htmlFor = id;
@@ -55,7 +76,7 @@ function addNote(note = {}) {
     field.id = id;
     field.dataset.field = key;
     field.value = note[key] || '';
-    field.required = key !== 'description';
+    field.required = key === 'title';
     if (key === 'url') field.placeholder = 'handouts/algebra.pdf or https://…';
     row.append(fieldLabel, field);
   }
@@ -76,7 +97,8 @@ const fields = {
   title: 'site-title-input', name: 'name-input', bio: 'bio-input',
   aopsHandle: 'aops-handle', aopsUrl: 'aops-url',
   discordHandle: 'discord-handle', discordUrl: 'discord-url',
-  gmail: 'gmail-input', youtube: 'youtube-url', github: 'github-url'
+  gmail: 'gmail-input', youtube: 'youtube-url', github: 'github-url',
+  mathstackexchange: 'mathstackexchange-url', inaturalist: 'inaturalist-url'
 };
 
 function fill(data) {
@@ -107,12 +129,22 @@ function render(data) {
   if (data.notes.length) {
     const list = doc.createElement('ul');
     for (const note of data.notes) {
-      if (!note.title || !note.url) throw new Error('Every note needs a title and a link.');
+      if (!note.title) throw new Error('Every note needs a title. You can leave its link blank until the PDF is ready.');
       const li = doc.createElement('li');
-      const link = doc.createElement('a');
-      link.textContent = note.title;
-      link.setAttribute('href', safeUrl(note.url, true));
-      li.append(link);
+      if (note.url) {
+        const link = doc.createElement('a');
+        link.textContent = note.title;
+        link.setAttribute('href', safeUrl(note.url, true));
+        li.append(link);
+      } else {
+        const title = doc.createElement('span');
+        title.dataset.noteTitle = '';
+        title.textContent = note.title;
+        const pending = doc.createElement('span');
+        pending.className = 'help';
+        pending.textContent = ' — PDF coming soon.';
+        li.append(title, pending);
+      }
       if (note.description) {
         const description = doc.createElement('span');
         description.dataset.description = '';
@@ -166,14 +198,27 @@ function render(data) {
     doc.querySelector(`[data-social="${key}"]`).replaceWith(element);
   }
   const other = doc.getElementById('other-links');
-  other.replaceChildren();
-  if (data.github) {
-    const item = doc.createElement('li');
+  for (const profile of profiles) {
+    const existing = profileLink(doc, profile);
+    const url = safeUrl(data[profile.field || profile.key]);
+    if (!url) {
+      if (existing) {
+        const item = existing.closest('li');
+        existing.remove();
+        if (item && !item.textContent.trim() && !item.querySelector('a')) item.remove();
+      }
+      continue;
+    }
     const link = doc.createElement('a');
-    link.href = safeUrl(data.github);
-    link.textContent = 'GitHub';
-    item.append(link);
-    other.append(item);
+    link.dataset.profile = profile.key;
+    link.href = url;
+    link.textContent = profile.label;
+    if (existing) existing.replaceWith(link);
+    else {
+      const item = doc.createElement('li');
+      item.append(link);
+      other.append(item);
+    }
   }
   return doc;
 }
@@ -246,8 +291,13 @@ input('reset-draft').addEventListener('click', () => {
     try {
       const stored = localStorage.getItem(draftKey);
       if (stored) {
-        const draft = JSON.parse(stored);
-        if (!draft || typeof draft !== 'object' || !Array.isArray(draft.notes) ||
+        const storedDraft = JSON.parse(stored);
+        if (!storedDraft || typeof storedDraft !== 'object' || Array.isArray(storedDraft)) {
+          throw new Error('Invalid draft');
+        }
+        // Older drafts lack newly added profile fields; keep the current page's values.
+        const draft = { ...published, ...storedDraft };
+        if (!Array.isArray(draft.notes) ||
             !Object.keys(fields).every(key => typeof draft[key] === 'string') ||
             !draft.notes.every(note => note && ['title', 'url', 'description'].every(key => typeof note[key] === 'string'))) {
           throw new Error('Invalid draft');

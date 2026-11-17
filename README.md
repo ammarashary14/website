@@ -14,8 +14,12 @@ repository collaborators can publish. No password or token is stored by the edit
 
 To host a PDF, create a `handouts` folder in the repository and upload it there.
 Use a relative link such as `handouts/algebra.pdf` in the editor. External
-document links also work. AoPS and Discord buttons copy your usernames until
-you add direct profile or invite URLs. Gmail and YouTube already link directly.
+document links also work. A path to a file on your computer, such as
+`/Users/yourname/Downloads/notes.pdf`, cannot be used by site visitors. Leave
+the link blank to show a note as coming soon until its file has been uploaded.
+AoPS and Discord buttons copy your usernames until you add direct profile or
+invite URLs. Gmail, YouTube, Math Stack Exchange, and iNaturalist link directly.
+The editor includes fields for each profile.
 
 You can also edit `index.html` manually. Keep its IDs and `data-social`
 attributes so the editor can read it. Edit `style.css` to adjust the appearance.
