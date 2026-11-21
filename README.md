@@ -4,9 +4,10 @@ A small static website. No packages or build step are needed.
 
 ## Edit
 
-Choose **Edit website** in the footer to open the editor. Change the title,
-name, bio, handout links, or social links, then preview the result. **Save draft**
-keeps a copy in that browser. **Download index.html** exports the updated page;
+Choose **Editor dashboard** in the footer. Its Overview, About, Handouts,
+Photos, Links, and Publish panels manage the whole page. Change the title,
+name, bio, handouts, photos, or social links, then preview the result. **Save draft**
+keeps a copy on that device, including photos. **Download page** exports the updated page;
 upload it to the repository root with GitHub's upload page and commit to `main`
 to publish. If your browser renames the download, rename it to `index.html` first.
 The editor is public, but drafts do not change the live site. Only GitHub
@@ -20,6 +21,20 @@ the link blank to show a note as coming soon until its file has been uploaded.
 AoPS and Discord buttons copy your usernames until you add direct profile or
 invite URLs. Gmail, YouTube, Math Stack Exchange, and iNaturalist link directly.
 The editor includes fields for each profile.
+
+In **Photos**, select images from your device or enter public image URLs. Add
+descriptions for screen readers, optional captions, and move photos up or down.
+Device uploads accept JPEG, PNG, WebP, and GIF files up to 15 MB each. They are
+resized to at most 1600 pixels on the longest side and embedded in the exported
+`index.html`, so there are no separate photo files to upload. Transparency is
+preserved; animated images become still images. URL-based photos continue to
+load from their original URLs. Visitors can click gallery images to enlarge them.
+
+Drafts use IndexedDB with a localStorage fallback. Older editor drafts are read
+automatically. Save a draft before leaving the dashboard; downloading does not
+publish. Use **Publish → Start again from the published page → Discard draft**
+to replace a local draft with the current page. Clearing browser data removes
+local drafts, so keep your downloaded page or commit it to GitHub as a backup.
 
 You can also edit `index.html` manually. Keep its IDs and `data-social`
 attributes so the editor can read it. Edit `style.css` to adjust the appearance.

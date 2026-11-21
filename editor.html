@@ -4,75 +4,100 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Edit website</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="editor.css">
-  <script src="editor.js" defer></script>
+  <title>Editor dashboard</title>
+  <link rel="stylesheet" href="editor.css?v=photos1">
+  <script src="editor-photos.js?v=photos1" defer></script>
+  <script src="editor.js?v=photos1" defer></script>
 </head>
 <body>
-  <header>
-    <h1>Edit website</h1>
-    <p><a href="./">← Back to website</a></p>
-    <p>Update your page here. Drafts stay in this browser; only people with access to your GitHub repository can publish changes.</p>
-  </header>
-  <p id="editor-status" role="status" aria-live="polite">Loading your page…</p>
-  <form id="editor-form">
-    <fieldset id="editor-fields" disabled>
-      <legend>About your site</legend>
-      <label for="site-title-input">Website title</label>
-      <input id="site-title-input" required maxlength="160">
-      <label for="name-input">Your name</label>
-      <input id="name-input" required maxlength="100" autocomplete="name">
-      <label for="bio-input">Bio</label>
-      <textarea id="bio-input" rows="4" required></textarea>
-
-      <h2>Handouts &amp; notes</h2>
-      <p class="help">Link a PDF, a document, or any page. For your own PDFs, upload them to a <code>handouts</code> folder in GitHub and use a link such as <code>handouts/algebra.pdf</code>.</p>
-      <p class="help">Leave a note’s link blank to show “PDF coming soon.” A path from your computer, such as <code>/Users/…/Downloads/file.pdf</code>, will not work for visitors; upload the file first or use a public URL.</p>
-      <div id="note-fields"></div>
-      <button id="add-note" type="button">+ Add a note</button>
-
-      <h2>Social links</h2>
-      <label for="aops-handle">AoPS username</label>
-      <input id="aops-handle" autocomplete="off">
-      <label for="aops-url">AoPS profile URL <span class="help">(optional)</span></label>
-      <input id="aops-url" type="url" placeholder="https://artofproblemsolving.com/community/user/…">
-      <label for="discord-handle">Discord username</label>
-      <input id="discord-handle" autocomplete="off">
-      <label for="discord-url">Discord profile or invite URL <span class="help">(optional)</span></label>
-      <input id="discord-url" type="url" placeholder="https://discord.com/users/…">
-      <p class="help">Without a profile URL, the AoPS and Discord buttons copy your username.</p>
-      <label for="gmail-input">Gmail address</label>
-      <input id="gmail-input" type="email" autocomplete="email">
-      <label for="youtube-url">YouTube channel URL</label>
-      <input id="youtube-url" type="url" placeholder="https://www.youtube.com/@yourchannel">
-      <label for="github-url">GitHub profile URL</label>
-      <input id="github-url" type="url" placeholder="https://github.com/yourname">
-      <label for="mathstackexchange-url">Math Stack Exchange profile URL</label>
-      <input id="mathstackexchange-url" type="url" placeholder="https://math.stackexchange.com/users/…">
-      <label for="inaturalist-url">iNaturalist profile URL</label>
-      <input id="inaturalist-url" type="url" placeholder="https://www.inaturalist.org/people/…">
-
-      <div class="actions">
-        <button type="submit">Preview changes</button>
-        <button id="save-draft" type="button">Save draft</button>
-        <button id="download" type="button">Download index.html</button>
-        <button id="reset-draft" type="button">Discard draft</button>
-      </div>
-    </fieldset>
-  </form>
-  <section>
-    <h2>Publish your changes</h2>
-    <ol>
-      <li>Preview your page, then choose <strong>Download index.html</strong>.</li>
-      <li><a href="https://github.com/ammarashary14/website/upload/main" target="_blank" rel="noopener noreferrer">Open GitHub’s upload page</a> and sign in.</li>
-      <li>Upload the downloaded file as <code>index.html</code>, replacing the old one, and commit to <code>main</code>. Rename it first if your browser added a number to the filename. GitHub Pages will update once enabled.</li>
-    </ol>
-    <p class="help">This editor does not ask for a password or GitHub token. Saving a draft or downloading a file does not change the live website.</p>
-  </section>
-  <section id="preview-section" hidden>
-    <h2>Preview</h2>
-    <iframe id="preview" title="Preview of your updated website" sandbox></iframe>
-  </section>
+  <a class="skip-link" href="#dashboard-main">Skip to editor</a>
+  <div class="dashboard-shell">
+    <aside class="sidebar">
+      <a class="brand" href="./" aria-label="Back to website"><span class="brand-mark">A.</span><span>Ammar’s website<small>Your little corner of the internet</small></span></a>
+      <p class="nav-label">Workspace</p>
+      <nav class="dashboard-nav" aria-label="Dashboard sections">
+        <a href="#overview" data-panel="overview" aria-current="page"><span class="nav-symbol" aria-hidden="true">◫</span> Overview</a>
+        <a href="#about" data-panel="about"><span class="nav-symbol" aria-hidden="true">Aa</span> About</a>
+        <a href="#handouts" data-panel="handouts"><span class="nav-symbol" aria-hidden="true">≡</span> Handouts</a>
+        <a href="#photos" data-panel="photos"><span class="nav-symbol" aria-hidden="true">▧</span> Photos</a>
+        <a href="#links" data-panel="links"><span class="nav-symbol" aria-hidden="true">→</span> Links</a>
+        <a href="#publish" data-panel="publish"><span class="nav-symbol" aria-hidden="true">↑</span> Publish</a>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span> Hosted on GitHub Pages<br><a href="./" target="_blank" rel="noopener">View website →</a></div>
+    </aside>
+    <main id="dashboard-main" class="dashboard-main">
+      <header class="dashboard-header">
+        <div><p class="eyebrow">Editor dashboard</p><h1 id="panel-title">Overview</h1></div>
+        <div class="toolbar">
+          <button id="save-draft" type="button" data-editor-action disabled>Save draft</button>
+          <button id="preview-button" type="submit" form="editor-form" data-editor-action disabled>Preview</button>
+          <button id="download" class="primary" type="button" data-editor-action disabled>Download page <span aria-hidden="true">↓</span></button>
+        </div>
+      </header>
+      <div class="draft-bar"><span id="draft-state" class="badge">Loading</span><p id="editor-status" role="status" aria-live="polite">Loading your website…</p></div>
+      <form id="editor-form" novalidate>
+        <fieldset id="editor-fields" disabled>
+          <legend class="sr-only">Website content</legend>
+          <section id="panel-overview" class="dashboard-panel" aria-label="Overview">
+            <div class="welcome card"><p class="eyebrow">Make yourself at home</p><h2 id="overview-title">Your website</h2><p>A place for your notes, photos, and things worth sharing.</p><a href="#about" data-panel="about" class="text-link">Edit your introduction <span aria-hidden="true">→</span></a></div>
+            <div class="stat-grid">
+              <a class="stat card" href="#handouts" data-panel="handouts"><span>Handouts &amp; notes</span><strong id="stat-notes">0</strong><small>Manage your collection →</small></a>
+              <a class="stat card" href="#photos" data-panel="photos"><span>Photos</span><strong id="stat-photos">0</strong><small>Add a moment worth keeping →</small></a>
+              <a class="stat card" href="#links" data-panel="links"><span>Personal links</span><strong id="stat-links">0</strong><small>Your places around the web →</small></a>
+            </div>
+            <div class="overview-bottom">
+              <div class="card"><h2>What would you like to add?</h2><div class="quick-links"><a href="#handouts" data-panel="handouts">A handout <span aria-hidden="true">→</span></a><a href="#photos" data-panel="photos">Some photos <span aria-hidden="true">→</span></a><a href="#links" data-panel="links">A new link <span aria-hidden="true">→</span></a></div></div>
+              <div class="card publishing-note"><span class="eyebrow">From draft to website</span><h2>Edit. Preview. Publish.</h2><p>Save your work in this browser. When you’re ready, download the page and upload it to GitHub.</p><a href="#publish" data-panel="publish" class="text-link">See publishing steps →</a></div>
+            </div>
+          </section>
+          <section id="panel-about" class="dashboard-panel card" aria-labelledby="about-heading" hidden>
+            <div class="section-heading"><div><h2 id="about-heading">A little about you</h2><p>The title and introduction visitors see on your page.</p></div></div>
+            <label for="site-title-input">Website title</label><input id="site-title-input" required maxlength="160">
+            <label for="name-input">Your name</label><input id="name-input" required maxlength="100" autocomplete="name">
+            <label for="bio-input">Bio</label><textarea id="bio-input" rows="6" required></textarea>
+          </section>
+          <section id="panel-handouts" class="dashboard-panel card" aria-labelledby="handouts-heading" hidden>
+            <div class="section-heading"><div><h2 id="handouts-heading">Handouts &amp; notes</h2><p>Share a problem set, a document, or a useful page.</p></div><button id="add-note" type="button">+ Add a note</button></div>
+            <p class="help">Upload PDFs to your repository’s <code>handouts</code> folder, then use a link like <code>handouts/algebra.pdf</code>. Public document links work too. Leave the link blank to mark a note as coming soon.</p>
+            <div id="note-fields"></div><p id="notes-empty" class="empty-state" hidden>No notes yet. Add your first one above.</p>
+          </section>
+          <section id="panel-photos" class="dashboard-panel card" aria-labelledby="photos-heading" hidden>
+            <div class="section-heading"><div><h2 id="photos-heading">Your photo collection</h2><p>Little moments, interesting places, anything you want to share.</p></div></div>
+            <div class="photo-upload-area"><label for="photo-upload">Choose photos from your device</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple><p class="help">JPG, PNG, WebP, or GIF · up to 15 MB each. Photos are resized and included in your downloaded page. GIFs are saved as still images.</p><span class="upload-or">or</span><button id="add-photo-url" type="button">+ Add an image link</button></div>
+            <p id="photo-status" class="help" role="status" aria-live="polite"></p>
+            <div id="photo-fields"></div><p id="photos-empty" class="empty-state">Your gallery is waiting for its first photo.</p>
+          </section>
+          <section id="panel-links" class="dashboard-panel card" aria-labelledby="links-heading" hidden>
+            <div class="section-heading"><div><h2 id="links-heading">Find you around the web</h2><p>Keep your profiles and contact details together.</p></div></div>
+            <div class="field-grid">
+              <div><label for="aops-handle">AoPS username</label><input id="aops-handle" autocomplete="off"></div>
+              <div><label for="aops-url">AoPS profile URL <span class="optional">(optional)</span></label><input id="aops-url" type="url" placeholder="https://artofproblemsolving.com/community/user/…"></div>
+              <div><label for="discord-handle">Discord username</label><input id="discord-handle" autocomplete="off"></div>
+              <div><label for="discord-url">Discord profile or invite URL <span class="optional">(optional)</span></label><input id="discord-url" type="url" placeholder="https://discord.com/users/…"></div>
+            </div>
+            <p class="help">Without profile URLs, the AoPS and Discord buttons copy your usernames.</p>
+            <div class="field-grid">
+              <div><label for="gmail-input">Gmail address</label><input id="gmail-input" type="email" autocomplete="email"></div>
+              <div><label for="youtube-url">YouTube channel URL</label><input id="youtube-url" type="url" placeholder="https://www.youtube.com/@yourchannel"></div>
+              <div><label for="github-url">GitHub profile URL</label><input id="github-url" type="url" placeholder="https://github.com/yourname"></div>
+              <div><label for="mathstackexchange-url">Math Stack Exchange profile URL</label><input id="mathstackexchange-url" type="url" placeholder="https://math.stackexchange.com/users/…"></div>
+              <div><label for="inaturalist-url">iNaturalist profile URL</label><input id="inaturalist-url" type="url" placeholder="https://www.inaturalist.org/people/…"></div>
+            </div>
+          </section>
+          <section id="panel-publish" class="dashboard-panel card" aria-labelledby="publish-heading" hidden>
+            <div class="section-heading"><div><h2 id="publish-heading">Ready to share?</h2><p>Your edits become public when you upload them to GitHub.</p></div></div>
+            <ol class="publish-steps"><li><strong>Check your preview.</strong><p>Use Preview at the top to see the page with your latest edits.</p></li><li><strong>Download your page.</strong><p>Choose Download page. Your uploaded photos are included in <code>index.html</code>.</p></li><li><strong>Upload and commit on GitHub.</strong><p>Replace the existing <code>index.html</code> on the <code>main</code> branch. If your browser adds a number to the downloaded filename, rename it to <code>index.html</code> first.</p><a class="button primary" href="https://github.com/ammarashary14/website/upload/main" target="_blank" rel="noopener noreferrer">Open GitHub upload →</a></li></ol>
+            <p class="help">Only people with access to your GitHub repository can publish. Saving a browser draft does not change the live page. GitHub Pages usually updates shortly after your commit.</p>
+            <details class="reset-area"><summary>Start again from the published page</summary><p>This discards the draft saved in this browser. Your live website stays as it is.</p><button id="reset-draft" type="button">Discard draft</button></details>
+          </section>
+        </fieldset>
+      </form>
+      <section id="preview-section" class="card" hidden>
+        <div class="section-heading"><div><p class="eyebrow">Before you publish</p><h2>Page preview</h2></div><button id="close-preview" type="button">Close preview</button></div>
+        <iframe id="preview" title="Preview of your updated website" sandbox></iframe>
+      </section>
+      <footer class="dashboard-footer">Made for your words, work, and wanderings. <a href="./" target="_blank" rel="noopener">View website →</a></footer>
+    </main>
+  </div>
 </body>
 </html>

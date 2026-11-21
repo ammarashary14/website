@@ -7,6 +7,9 @@ const notes = document.getElementById('note-fields');
 const input = id => document.getElementById(id);
 let source;
 let noteNumber = 0;
+let ready = false;
+let dirty = false;
+let saving = false;
 const profiles = [
   { key: 'github', label: 'GitHub', hostname: 'github.com' },
   { key: 'math-stackexchange', field: 'mathstackexchange', label: 'Math Stack Exchange', hostname: 'math.stackexchange.com' },
@@ -46,6 +49,7 @@ function readPage(doc) {
     title: doc.getElementById('site-title').textContent,
     name: doc.getElementById('owner-name').textContent,
     bio: doc.getElementById('bio').textContent,
+    photos: photoEditor.read(doc),
     notes: [...doc.querySelectorAll('#handout-content li')].map(li => ({
       title: li.querySelector('a, [data-note-title]')?.textContent || '',
       url: li.querySelector('a')?.getAttribute('href') || '',
@@ -87,6 +91,7 @@ function addNote(note = {}) {
     row.remove();
     input('add-note').focus();
     status.textContent = 'Note removed from this draft. Save or download to keep the change.';
+    markChanged();
   });
   row.append(remove);
   notes.append(row);
@@ -105,6 +110,8 @@ function fill(data) {
   for (const [key, id] of Object.entries(fields)) input(id).value = data[key] || '';
   notes.replaceChildren();
   for (const note of data.notes || []) addNote(note);
+  photoEditor.fill(data.photos || []);
+  updateSummary();
 }
 
 function collect() {
@@ -112,6 +119,7 @@ function collect() {
   data.notes = [...notes.children].map(row => Object.fromEntries(
     [...row.querySelectorAll('input')].map(field => [field.dataset.field, field.value.trim()])
   ));
+  data.photos = photoEditor.collect();
   return data;
 }
 
@@ -220,6 +228,7 @@ function render(data) {
       other.append(item);
     }
   }
+  photoEditor.render(doc, data.photos);
   return doc;
 }
 
@@ -227,8 +236,169 @@ function serialize(doc) {
   return '<!doctype html>\n' + doc.documentElement.outerHTML + '\n';
 }
 
+const panelNames = { overview: 'Overview', about: 'About your site', handouts: 'Handouts & notes', photos: 'Photos', links: 'Personal links', publish: 'Publish your changes' };
+
+function showPanel(name, updateHash = true) {
+  if (!Object.hasOwn(panelNames, name)) name = 'overview';
+  document.querySelectorAll('.dashboard-panel').forEach(panel => { panel.hidden = panel.id !== `panel-${name}`; });
+  document.querySelectorAll('.dashboard-nav [data-panel]').forEach(link => {
+    if (link.dataset.panel === name) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  input('panel-title').textContent = panelNames[name];
+  if (updateHash) history.replaceState(null, '', `#${name}`);
+}
+
+document.querySelectorAll('[data-panel]').forEach(link => link.addEventListener('click', event => {
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  showPanel(link.dataset.panel);
+}));
+window.addEventListener('hashchange', () => showPanel(location.hash.slice(1), false));
+showPanel(location.hash.slice(1), false);
+
+function updateSummary() {
+  input('overview-title').textContent = input('site-title-input').value.trim() || 'Your website';
+  input('stat-notes').textContent = notes.children.length;
+  const photos = photoEditor.collect();
+  input('stat-photos').textContent = photos.length;
+  input('notes-empty').hidden = notes.children.length > 0;
+  input('photos-empty').hidden = photos.length > 0;
+  const socialCount = [
+    input('aops-handle').value || input('aops-url').value,
+    input('discord-handle').value || input('discord-url').value,
+    input('gmail-input').value, input('youtube-url').value,
+    input('github-url').value, input('mathstackexchange-url').value, input('inaturalist-url').value
+  ].filter(value => value.trim()).length;
+  input('stat-links').textContent = socialCount;
+  document.querySelectorAll('[data-editor-action]').forEach(button => {
+    button.disabled = !ready || photoEditor.isBusy() || saving;
+  });
+  input('reset-draft').disabled = !ready || photoEditor.isBusy() || saving;
+}
+
+function badge(message, unsaved = false) {
+  input('draft-state').textContent = message;
+  input('draft-state').classList.toggle('unsaved', unsaved);
+}
+
+function markChanged() {
+  updateSummary();
+  if (!ready) return;
+  dirty = true;
+  badge('Unsaved changes', true);
+  status.textContent = photoEditor.isBusy() ? 'Preparing your photos…' : 'Save a draft to keep your changes on this device.';
+}
+form.addEventListener('input', markChanged);
+document.addEventListener('photoschange', markChanged);
+window.addEventListener('beforeunload', event => {
+  if (dirty) { event.preventDefault(); event.returnValue = ''; }
+});
+
+function openDraftDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ammar-website-editor', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('drafts');
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('Draft storage is blocked.'));
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+async function draftTransaction(mode, action) {
+  const database = await openDraftDatabase();
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = database.transaction('drafts', mode);
+      let result;
+      const request = action(transaction.objectStore('drafts'));
+      request.onsuccess = () => { result = request.result; };
+      transaction.oncomplete = () => resolve(result);
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error('Draft storage failed.'));
+    });
+  } finally { database.close(); }
+}
+
+let latestDraftTime = 0;
+
+function normalizeDraftRecord(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return null;
+  if (!Object.hasOwn(record, 'savedAt') && !Object.hasOwn(record, 'data')) {
+    return { savedAt: 0, data: record };
+  }
+  if (!Number.isFinite(record.savedAt) || record.savedAt < 0 ||
+      !Object.hasOwn(record, 'data') ||
+      (record.data !== null && (typeof record.data !== 'object' || Array.isArray(record.data)))) return null;
+  latestDraftTime = Math.max(latestDraftTime, record.savedAt);
+  return record;
+}
+
+function draftRecord(data) {
+  // Keep saves ordered even if two actions occur within the same millisecond.
+  latestDraftTime = Math.max(Date.now(), latestDraftTime + 1);
+  return { savedAt: latestDraftTime, data };
+}
+
+async function loadDraft() {
+  const results = await Promise.allSettled([
+    draftTransaction('readonly', store => store.get('current')),
+    Promise.resolve().then(() => {
+      const stored = localStorage.getItem(draftKey);
+      return stored ? JSON.parse(stored) : null;
+    })
+  ]);
+  if (results.every(result => result.status === 'rejected')) throw new Error('Draft storage is unavailable.');
+  const [database, fallback] = results.map(result => result.status === 'fulfilled' ? normalizeDraftRecord(result.value) : null);
+  const newest = fallback && (!database || fallback.savedAt >= database.savedAt) ? fallback : database;
+  return newest?.data ?? null;
+}
+
+async function storeDraft(data) {
+  const record = draftRecord(data);
+  try {
+    await draftTransaction('readwrite', store => store.put(record, 'current'));
+  } catch {
+    localStorage.setItem(draftKey, JSON.stringify(record));
+    return;
+  }
+  try { localStorage.removeItem(draftKey); } catch { /* The newer database record wins on reload. */ }
+}
+
+async function removeDraft() {
+  let databaseCleared = false;
+  try {
+    await draftTransaction('readwrite', store => store.delete('current'));
+    databaseCleared = true;
+  } catch { /* A timestamped fallback can hide an inaccessible old record. */ }
+  if (databaseCleared) {
+    try { localStorage.removeItem(draftKey); return; }
+    catch { /* Persist a database tombstone if the fallback cannot be cleared. */ }
+  }
+  const tombstone = draftRecord(null);
+  if (!databaseCleared) {
+    try { localStorage.setItem(draftKey, JSON.stringify(tombstone)); return; }
+    catch { /* Try the database once more if only deletion was unavailable. */ }
+  }
+  await draftTransaction('readwrite', store => store.put(tombstone, 'current'));
+}
+
 function validDocument() {
-  if (!form.reportValidity()) return null;
+  if (photoEditor.isBusy()) { status.textContent = 'Wait for your photos to finish preparing.'; return null; }
+  const invalid = [...form.querySelectorAll('input, textarea')].find(field => !field.checkValidity());
+  if (invalid) {
+    showPanel(invalid.closest('.dashboard-panel').id.replace('panel-', ''));
+    invalid.reportValidity();
+    status.textContent = 'Please complete the highlighted field.';
+    return null;
+  }
+  try {
+    photoEditor.validate(photoEditor.collect());
+  } catch (error) {
+    showPanel('photos');
+    status.textContent = error.message;
+    return null;
+  }
   try { return render(collect()); }
   catch (error) { status.textContent = error.message; return null; }
 }
@@ -237,7 +407,6 @@ form.addEventListener('submit', event => {
   event.preventDefault();
   const doc = validDocument();
   if (!doc) return;
-  // Preview stays sandboxed; scripts are unnecessary for inspecting the page.
   doc.querySelectorAll('script').forEach(script => script.remove());
   const base = doc.createElement('base');
   base.href = new URL('./', location.href).href;
@@ -247,15 +416,29 @@ form.addEventListener('submit', event => {
   status.textContent = 'Preview updated below. Your live page has not changed.';
   input('preview-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
+input('close-preview').addEventListener('click', () => {
+  input('preview-section').hidden = true;
+  input('preview-button').focus();
+});
 
-input('add-note').addEventListener('click', () => addNote().querySelector('input').focus());
-input('save-draft').addEventListener('click', () => {
+input('add-note').addEventListener('click', () => {
+  addNote().querySelector('input').focus();
+  markChanged();
+});
+input('save-draft').addEventListener('click', async () => {
+  if (!ready || photoEditor.isBusy() || saving) return;
+  saving = true;
+  updateSummary();
+  const data = collect();
   try {
-    localStorage.setItem(draftKey, JSON.stringify(collect()));
-    status.textContent = 'Draft saved in this browser. Download and upload it to GitHub when ready to publish.';
+    await storeDraft(data);
+    dirty = JSON.stringify(collect()) !== JSON.stringify(data);
+    badge(dirty ? 'Unsaved changes' : 'Saved on this device', dirty);
+    status.textContent = dirty ? 'Draft saved. Save again to include your latest changes.' : 'Draft saved with your photos. Download and upload to GitHub when you’re ready.';
   } catch {
-    status.textContent = 'Browser storage is unavailable. You can still download your changes.';
-  }
+    status.textContent = 'Browser storage is unavailable or full. Download the page to keep a copy of your changes.';
+    badge('Not saved', true);
+  } finally { saving = false; updateSummary(); }
 });
 
 input('download').addEventListener('click', () => {
@@ -269,15 +452,27 @@ input('download').addEventListener('click', () => {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
-  status.textContent = 'Downloaded index.html. Upload it to GitHub using the steps below to publish your changes.';
+  showPanel('publish');
+  status.textContent = 'Downloaded index.html, including uploaded photos. Follow the steps below to publish.';
 });
 
-input('reset-draft').addEventListener('click', () => {
+input('reset-draft').addEventListener('click', async () => {
+  if (photoEditor.isBusy() || saving) return;
   if (!confirm('Discard this browser’s draft and reload the current website content?')) return;
-  try { localStorage.removeItem(draftKey); } catch { /* Loading the published page still works. */ }
-  fill(readPage(source));
-  input('preview-section').hidden = true;
-  status.textContent = 'Current website content restored in the editor.';
+  saving = true;
+  updateSummary();
+  try {
+    await removeDraft();
+    ready = false;
+    fill(readPage(source));
+    ready = true;
+    dirty = false;
+    input('preview-section').hidden = true;
+    badge('Current website');
+    status.textContent = 'Current website content restored in the dashboard.';
+  } catch {
+    status.textContent = 'Could not clear the saved draft. Your edits are still here; download them before trying again.';
+  } finally { saving = false; updateSummary(); }
 });
 
 (async () => {
@@ -287,29 +482,31 @@ input('reset-draft').addEventListener('click', () => {
     source = new DOMParser().parseFromString(await response.text(), 'text/html');
     const published = readPage(source);
     fill(published);
-    status.textContent = 'Ready to edit. Save a draft to keep your work in this browser.';
+    badge('Current website');
+    status.textContent = 'Ready when you are. Your changes stay in this browser until you publish.';
     try {
-      const stored = localStorage.getItem(draftKey);
-      if (stored) {
-        const storedDraft = JSON.parse(stored);
-        if (!storedDraft || typeof storedDraft !== 'object' || Array.isArray(storedDraft)) {
-          throw new Error('Invalid draft');
-        }
-        // Older drafts lack newly added profile fields; keep the current page's values.
+      const storedDraft = await loadDraft();
+      if (storedDraft) {
+        if (typeof storedDraft !== 'object' || Array.isArray(storedDraft)) throw new Error('Invalid draft');
         const draft = { ...published, ...storedDraft };
-        if (!Array.isArray(draft.notes) ||
+        if (!Array.isArray(draft.notes) || !Array.isArray(draft.photos) ||
             !Object.keys(fields).every(key => typeof draft[key] === 'string') ||
-            !draft.notes.every(note => note && ['title', 'url', 'description'].every(key => typeof note[key] === 'string'))) {
+            !draft.notes.every(note => note && ['title', 'url', 'description'].every(key => typeof note[key] === 'string')) ||
+            !draft.photos.every(photo => photo && ['src', 'alt', 'caption'].every(key => typeof photo[key] === 'string'))) {
           throw new Error('Invalid draft');
         }
         fill(draft);
-        status.textContent = 'Loaded your saved browser draft. Discard draft to start from the current website.';
+        badge('Saved draft');
+        status.textContent = 'Loaded your saved draft. It may differ from the published website.';
       }
     } catch {
-      status.textContent = 'Saved draft unavailable. Loaded the current website; downloads still work.';
+      status.textContent = 'Saved draft unavailable. Loaded the current website; you can still download your edits.';
     }
+    ready = true;
     input('editor-fields').disabled = false;
+    updateSummary();
   } catch {
-    status.textContent = 'Could not load your website. Open this editor through GitHub Pages or the local development server, then reload.';
+    badge('Could not load', true);
+    status.textContent = 'Could not load your website. Open this dashboard through GitHub Pages or the local server, then reload.';
   }
 })();
