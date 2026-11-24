@@ -10,7 +10,9 @@ Cloudflare DNS and HTTPS verification are still pending; see
 
 ## Edit
 
-Choose **Editor dashboard** in the footer. Its Overview, About, Handouts,
+Open `editor.html` directly (for example, `https://ammarashary.cc/editor.html`)
+and bookmark it. The public page does not link to the dashboard; the editor
+remains reachable by its URL. Its Overview, About, Handouts,
 Photos, Links, and Publish panels manage the whole page. Change the title,
 name, bio, handouts, photos, or social links, then preview the result. **Save draft**
 keeps a copy on that device, including photos. **Download page** exports the updated page;
