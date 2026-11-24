@@ -3,9 +3,10 @@
 A small static website. No packages or build step are needed.
 
 The public page uses a plain white background, black serif text, and standard
-blue links. Domain setup for `ammarashary.cc` is documented in
-[DOMAIN_SETUP.md](DOMAIN_SETUP.md), including Cloudflare Pages for a private
-repository and the GitHub Pages alternative. The domain is not connected yet.
+blue links. On wider screens, the text and links sit beside the photos; phones
+use a single column. The root `CNAME` declares `ammarashary.cc` for GitHub Pages.
+Cloudflare DNS and HTTPS verification are still pending; see
+[DOMAIN_SETUP.md](DOMAIN_SETUP.md).
 
 ## Edit
 
