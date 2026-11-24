@@ -2,6 +2,11 @@
 
 A small static website. No packages or build step are needed.
 
+The public page uses a plain white background, black serif text, and standard
+blue links. Domain setup for `ammarashary.cc` is documented in
+[DOMAIN_SETUP.md](DOMAIN_SETUP.md), including Cloudflare Pages for a private
+repository and the GitHub Pages alternative. The domain is not connected yet.
+
 ## Edit
 
 Choose **Editor dashboard** in the footer. Its Overview, About, Handouts,
@@ -44,7 +49,7 @@ attributes so the editor can read it. Edit `style.css` to adjust the appearance.
 From this directory, run:
 
 ```sh
-python3 -m http.server 8000 --bind 0.0.0.0
+python3 -m http.server 3000 --bind 0.0.0.0
 ```
 
 ## Publish on GitHub Pages
